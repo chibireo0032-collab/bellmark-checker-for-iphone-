@@ -3,99 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ベルマークチェッカー説明</title>
+<title>ベルマークチェッカー | Bellmark Checker</title>
 <style>
 body{
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  background:#f4f4f4;
-  margin:0;
+  font-family:sans-serif;
+  text-align:center;
+  background:#f4f8ff;
   padding:20px;
 }
-h1{
-  text-align:center;
+button{
+  padding:10px 20px;
+  margin:10px;
+  font-size:16px;
+  border:none;
+  border-radius:8px;
+  background:#4a90e2;
+  color:white;
 }
-.container{
-  display:flex;
-  gap:20px;
-  flex-wrap:wrap;
+video{
+  width:100%;
+  max-width:300px;
+  margin-top:10px;
+  border-radius:10px;
+}
+.result{
+  margin-top:20px;
+  font-size:18px;
 }
 .box{
-  flex:1;
-  min-width:280px;
   background:white;
-  padding:20px;
+  padding:15px;
   border-radius:12px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-.child{
-  background:#fff8dc;
-}
-.adult{
-  background:#e8f4ff;
-}
-h2{
-  margin-top:0;
+  margin-top:20px;
 }
 </style>
 </head>
 <body>
 
-<h1>🔔 ベルマークチェッカー</h1>
+<h2>ベルマークチェッカー</h2>
+<h3>Bellmark Checker</h3>
 
-<div class="container">
+<div class="box">
+<p>
+📖 つかいかた（Guide）<br>
+① 下の「使う」ボタンを押します。<br>
+② カメラでベルマークを撮影します。<br>
+③ 点数とあと何点で買えるかが表示されます。
+</p>
 
-<!-- 子ども向け -->
-<div class="box child">
-<h2>🌸 こども むけ</h2>
-
-<p>この ページは、ベルマークを<br>
-カメラで うつして、<br>
-てんすう（点数）を しらべる ページです。</p>
-
-<h3>📸 つかいかた</h3>
-<ol>
-<li>カメラを ゆるします</li>
-<li>ベルマークを まんなかに おきます</li>
-<li>「さつえい して かくにん」を おします</li>
-<li>けっか が でます</li>
-</ol>
-
-<h3>✅ きまり</h3>
-<ul>
-<li>「ベルマーク」と かいて あります</li>
-<li>「見本（みほん）」と かいて いません</li>
-</ul>
-
-<p>くらい ばしょでは、よみにくい です。</p>
-
+<p>
+① Press "Use Camera"<br>
+② Take a picture of the bellmark<br>
+③ See your total points and rewards
+</p>
 </div>
 
-<!-- 大人向け -->
-<div class="box adult">
-<h2>👨‍👩‍👧 大人向け</h2>
+<button onclick="startCamera()">📷 使う / Use Camera</button>
+<button onclick="addPoint()">＋1点追加 / Add 1 Point</button>
 
-<p>このページは、ベルマークをカメラで読み取り、<br>
-点数の目安を確認するための説明ページです。</p>
+<br>
+<video id="video" autoplay playsinline></video>
+<br>
+<button onclick="takePhoto()">📸 撮影 / Take Photo</button>
 
-<h3>📸 使用方法</h3>
-<ol>
-<li>カメラを許可します</li>
-<li>ベルマークを画面中央に合わせます</li>
-<li>「撮影して確認」を押します</li>
-<li>判定結果が表示されます</li>
-</ol>
+<div class="result" id="result"></div>
 
-<h3>✅ 判定条件</h3>
-<ul>
-<li>「ベルマーク」という文字が確認できること</li>
-<li>「見本」と記載されていないこと</li>
-</ul>
+<script>
+let totalPoints = 200; // ← 今200点あるって言ってたね
 
-<p>最終的な確認は学校・団体で行ってください。</p>
+const rewards = [
+  {points:100, name:"えんぴつ / Pencil"},
+  {points:300, name:"ノート / Notebook"},
+  {points:500, name:"ボール / Ball"},
+  {points:1000, name:"学校セット / School Set"}
+];
 
-</div>
+function startCamera(){
+  navigator.mediaDevices.getUserMedia({video:true})
+  .then(stream=>{
+    document.getElementById("video").srcObject=stream;
+  })
+  .catch(()=>{
+    alert("カメラが使えません / Camera not available");
+  });
+}
 
-</div>
+function takePhoto(){
+  // 今回はテストなので毎回1点として計算
+  totalPoints += 1;
+  showResult(1);
+}
+
+function addPoint(){
+  totalPoints += 1;
+  showResult(1);
+}
+
+function showResult(newPoint){
+  let rewardText="";
+  let nextReward=null;
+
+  for(let r of rewards){
+    if(totalPoints < r.points){
+      nextReward=r;
+      break;
+    }
+  }
+
+  if(nextReward){
+    rewardText = `
+    あと ${nextReward.points-totalPoints} 点で
+    ${nextReward.name} が買えます。
+    <br>
+    You need ${nextReward.points-totalPoints} more points
+    to get ${nextReward.name}.
+    `;
+  } else {
+    rewardText = `
+    すごい！全部買えます！
+    <br>
+    Amazing! You can get all rewards!
+    `;
+  }
+
+  document.getElementById("result").innerHTML = `
+    今回は ${newPoint} 点です。<br>
+    This time: ${newPoint} point.<br><br>
+    合計 ${totalPoints} 点です。<br>
+    Total: ${totalPoints} points.<br><br>
+    ${rewardText}
+  `;
+}
+</script>
 
 </body>
 </html>
