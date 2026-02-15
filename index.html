@@ -1,51 +1,37 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ベルマークチェッカー | Bellmark Checker</title>
+<title>AIベルマークチェッカー</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
 
 <style>
 body{
   font-family:sans-serif;
   text-align:center;
-  background:#f0f6ff;
+  background:#eef4ff;
   padding:20px;
 }
-
-h2{
-  margin-bottom:5px;
-}
-
-.guide{
-  font-size:13px;
-  background:white;
-  padding:15px;
-  border-radius:12px;
-  margin-bottom:20px;
-}
-
 button{
-  padding:12px 20px;
+  padding:10px 18px;
   margin:8px;
   font-size:16px;
   border:none;
-  border-radius:10px;
+  border-radius:8px;
   background:#4a90e2;
   color:white;
-  cursor:pointer;
 }
-
 video{
   width:100%;
   max-width:300px;
   border-radius:12px;
-  margin-top:10px;
 }
-
 .result{
   margin-top:20px;
-  font-size:17px;
+  font-size:18px;
   background:white;
   padding:15px;
   border-radius:12px;
@@ -54,106 +40,51 @@ video{
 </head>
 <body>
 
-<h2>ベルマークチェッカー</h2>
-<h3>Bellmark Checker</h3>
+<h2>AI ベルマークチェッカー</h2>
 
-<div class="guide">
-
-<b>👦 子供むけ</b><br>
-① つかうボタンをおすよ。<br>
-② ベルマークをとるよ。<br>
-③ なんてんか でるよ。<br><br>
-
-<b>👨 大人向け</b><br>
-① 「使う」ボタンを押してください。<br>
-② ベルマークを撮影します。<br>
-③ 点数と必要な残り点数が表示されます。<br><br>
-
-<b>🧒 For Kids</b><br>
-1. Press the button.<br>
-2. Take a picture.<br>
-3. See your points.<br><br>
-
-<b>👩 For Adults</b><br>
-1. Press "Use Camera".<br>
-2. Capture the bellmark.<br>
-3. View total and remaining points.<br>
-
-</div>
-
-<button onclick="startCamera()">📷 使う / Use Camera</button>
-<button onclick="takePhoto()">📸 撮影 / Take Photo</button>
-<button onclick="addPoint()">➕ 1点追加 / Add 1 Point</button>
+<button onclick="startCamera()">📷 カメラ開始</button>
+<button onclick="capture()">📸 認識する</button>
 
 <br>
 <video id="video" autoplay playsinline></video>
 
-<div class="result" id="result"></div>
+<div class="result" id="result">
+AI読み込み中...
+</div>
 
 <script>
+let model;
+let totalPoints = 0;
 
-let totalPoints = 200;
-
-const rewards = [
-  {points:100, name:"えんぴつ / Pencil"},
-  {points:300, name:"ノート / Notebook"},
-  {points:500, name:"ボール / Ball"},
-  {points:1000, name:"学校セット / School Set"}
-];
+async function loadModel(){
+  model = await mobilenet.load();
+  document.getElementById("result").innerHTML = "AI準備完了";
+}
+loadModel();
 
 function startCamera(){
   navigator.mediaDevices.getUserMedia({video:true})
   .then(stream=>{
     document.getElementById("video").srcObject = stream;
-  })
-  .catch(()=>{
-    alert("カメラが使用できません / Camera not available");
   });
 }
 
-function takePhoto(){
-  totalPoints += 1;
-  showResult(1);
-}
+async function capture(){
+  const video = document.getElementById("video");
+  const predictions = await model.classify(video);
 
-function addPoint(){
-  totalPoints += 1;
-  showResult(1);
-}
+  let isPaper = predictions[0].className.includes("paper") 
+             || predictions[0].className.includes("envelope");
 
-function showResult(newPoint){
-  let nextReward = null;
-
-  for(let r of rewards){
-    if(totalPoints < r.points){
-      nextReward = r;
-      break;
-    }
+  if(isPaper){
+    totalPoints += 1;
+    document.getElementById("result").innerHTML =
+      "ベルマークの可能性あり！ +1点<br>合計: " + totalPoints + "点";
+  }else{
+    document.getElementById("result").innerHTML =
+      "ベルマークではない可能性<br>判定: " + predictions[0].className;
   }
-
-  let rewardText = "";
-
-  if(nextReward){
-    rewardText = `
-    あと ${nextReward.points-totalPoints} 点で ${nextReward.name} が買えます。<br>
-    You need ${nextReward.points-totalPoints} more points to get ${nextReward.name}.
-    `;
-  } else {
-    rewardText = `
-    すごい！全部の景品を買えます！<br>
-    Amazing! You can get all rewards!
-    `;
-  }
-
-  document.getElementById("result").innerHTML = `
-    今回は ${newPoint} 点です。<br>
-    This time: ${newPoint} point.<br><br>
-    合計 ${totalPoints} 点です。<br>
-    Total: ${totalPoints} points.<br><br>
-    ${rewardText}
-  `;
 }
-
 </script>
 
 </body>
